@@ -5,6 +5,7 @@ from langchain.schema import HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatZhipuAI
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import START, StateGraph
 from langgraph.prebuilt import ToolNode
@@ -25,8 +26,13 @@ def get_weather(city: Literal["nyc", "sf"]):
 tools = [get_weather]
 
 
-model = ChatZhipuAI(temperature=0, api_key=qiko_configs.LLM_API_KEY, model="glm-4-plus").bind_tools(tools)
-llm = ChatZhipuAI(temperature=0, api_key=qiko_configs.LLM_API_KEY, model="glm-4-plus").with_config(tags=["final_node"])
+model = ChatOpenAI(
+    temperature=0, api_key=qiko_configs.ONEAPI_API_KEY, base_url=qiko_configs.ONEAPI_API_URL, model="glm-4-plus"
+).bind_tools(tools)
+
+llm = ChatOpenAI(
+    temperature=0, api_key=qiko_configs.ONEAPI_API_KEY, base_url=qiko_configs.ONEAPI_API_URL, model="glm-4-plus"
+).with_config(tags=["final_node"])
 
 
 def should_continue(state: State) -> Literal["tools", "final"]:

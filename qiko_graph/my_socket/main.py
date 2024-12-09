@@ -13,7 +13,7 @@ sio = socketio.AsyncServer(
     always_connect=True,
 )
 
-app = socketio.ASGIApp(socketio_server=sio, socketio_path="/ws/socket.io")
+socket_app = socketio.ASGIApp(socketio_server=sio, socketio_path="/ws/socket.io")
 
 
 @sio.event

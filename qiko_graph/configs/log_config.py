@@ -41,5 +41,5 @@ class LoggingConfig(BaseSettings):
 
     LOG_TZ: Optional[str] = Field(
         description="Timezone for log timestamps (e.g., 'America/New_York')",
-        default="UTC",
+        default="Asia/Shanghai",
     )

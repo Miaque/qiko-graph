@@ -9,10 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from graph import graph, llm
 from langchain_core.runnables import RunnableConfig
-from my_socket.main import app as socket_app
+from my_socket.main import socket_app
 from pydantic import BaseModel
 
-logging.basicConfig(stream=sys.stdout, level="INFO")
 logging.basicConfig(
     level=qiko_configs.LOG_LEVEL,
     format=qiko_configs.LOG_FORMAT,
@@ -93,6 +92,8 @@ async def generate(question: Question):
                 # print(event)
                 kind = event["event"]
                 tags = event.get("tags", [])
+                
+                # yield f"data: {event}\n\n"
 
                 if kind == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "agent":
                     content = event["data"]["chunk"].content
