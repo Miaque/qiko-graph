@@ -7,10 +7,11 @@ from configs import qiko_configs
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from graph import graph, llm
+from graph import llm
 from langchain_core.runnables import RunnableConfig
 from my_socket.main import socket_app
 from pydantic import BaseModel
+from subgraph import graph
 
 logging.basicConfig(
     level=qiko_configs.LOG_LEVEL,
@@ -70,7 +71,7 @@ app = FastAPI(docs_url="/docs", openapi_url="/openapi.json")
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins='*',  # 在生产环境中应该设置具体的域名
+    allow_origins="*",  # 在生产环境中应该设置具体的域名
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -88,12 +89,13 @@ async def generate(question: Question):
                 {"messages": [("user", question.question)]},
                 config=RunnableConfig(configurable=config["configurable"]),
                 version="v2",
+                subgraph=True,
             ):
                 # print(event)
                 kind = event["event"]
                 tags = event.get("tags", [])
-                
-                # yield f"data: {event}\n\n"
+
+                yield f"data: {event}\n\n"
 
                 if kind == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "agent":
                     content = event["data"]["chunk"].content
