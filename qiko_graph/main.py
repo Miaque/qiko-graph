@@ -1,7 +1,10 @@
 import json
 import logging
+import os
 import sys
+import time
 import uuid
+from typing import List, Optional
 
 from configs import qiko_configs
 from fastapi import FastAPI
@@ -10,8 +13,12 @@ from fastapi.responses import StreamingResponse
 from graph import llm
 from langchain_core.runnables import RunnableConfig
 from my_socket.main import socket_app
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from subgraph import graph
+
+os.environ["TZ"] = "Asia/Shanghai"
+if hasattr(time, "tzset"):
+    time.tzset()
 
 logging.basicConfig(
     level=qiko_configs.LOG_LEVEL,
@@ -81,33 +88,48 @@ app.add_middleware(
 app.mount("/ws", socket_app)
 
 
+class InputPayload(BaseModel):
+    input: dict
+
+
+class MetadataPayload(BaseModel):
+    langgraph_node: Optional[str] = None
+
+
+class ResponsePayload(BaseModel):
+    event: str
+    name: str
+    run_id: str
+    metadata: MetadataPayload
+    parent_ids: List[str] = Field(default_factory=list)
+
+
 @app.post("/generate")
-async def generate(question: Question):
+async def generate(p: InputPayload):
     async def response_stream():
         try:
             async for event in graph.astream_events(
-                {"messages": [("user", question.question)]},
-                config=RunnableConfig(configurable=config["configurable"]),
-                version="v2",
-                subgraph=True,
+                p.input, config=RunnableConfig(configurable=config["configurable"]), version="v2"
             ):
                 # print(event)
                 kind = event["event"]
                 tags = event.get("tags", [])
 
-                yield f"data: {event}\n\n"
+                # yield f"data: {event}\n\n"
 
-                if kind == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "agent":
-                    content = event["data"]["chunk"].content
-                    yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
+                yield f"data: {ResponsePayload(**event)}\n\n"
 
-                if event["event"] == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "final":
-                    content = event["data"]["chunk"].content
-                    yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
+                # if kind == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "agent":
+                #     content = event["data"]["chunk"].content
+                #     yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
 
-                if event["event"] == "on_chat_model_stream" and "final_node" in tags:
-                    content = event["data"]["chunk"].content
-                    yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
+                # if event["event"] == "on_chat_model_stream" and event["metadata"].get("langgraph_node") == "final":
+                #     content = event["data"]["chunk"].content
+                #     yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
+
+                # if event["event"] == "on_chat_model_stream" and "final_node" in tags:
+                #     content = event["data"]["chunk"].content
+                #     yield f"data: {json.dumps({'content': content}, ensure_ascii=False)}\n\n"
         except Exception as e:
             logger.exception(e)
 

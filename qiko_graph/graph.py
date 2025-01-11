@@ -27,11 +27,11 @@ tools = [get_weather]
 
 
 model = ChatOpenAI(
-    temperature=0, api_key=qiko_configs.ONEAPI_API_KEY, base_url=qiko_configs.ONEAPI_API_URL, model="glm-4-plus"
+    temperature=0, api_key=qiko_configs.ONE_API_KEY, base_url=qiko_configs.ONE_API_URL, model="glm-4-plus"
 ).bind_tools(tools)
 
 llm = ChatOpenAI(
-    temperature=0, api_key=qiko_configs.ONEAPI_API_KEY, base_url=qiko_configs.ONEAPI_API_URL, model="glm-4-plus"
+    temperature=0, api_key=qiko_configs.ONE_API_KEY, base_url=qiko_configs.ONE_API_URL, model="glm-4-plus"
 ).with_config(tags=["final_node"])
 
 
